@@ -8,6 +8,8 @@ import { Camera, RefreshCw, Send, Download, Wand2, AlertCircle, BookOpen, X } fr
 type WebcamRef = React.RefObject<Webcam>;
 type Gender = 'female' | 'male' | '';  
 
+
+
 const themes = [
   'Cyberpunk Character',
   'Fantasy Warrior',
@@ -156,6 +158,21 @@ export default function SelfieBooth() {
 		}, 500);  
 	  }  
 	};
+
+  // Uses the url stored in processedImage to convert the image to Base64
+  const convertImageToBase64 = async (imageUrl: string) => {
+    const response = await fetch(imageUrl); // Fetch image data from URL
+    const blob = await response.blob(); // Get binary data of image
+
+    // Convert blob to Base64
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob); // Convert blob to Base64
+    });
+  }
+
   const sendEmail = async () => {
     if (!processedImage || !email || !hasEdited) return;
 
@@ -163,6 +180,8 @@ export default function SelfieBooth() {
     setError(null);
 
     try {
+      const base64Image = await convertImageToBase64(processedImage);
+
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
@@ -170,7 +189,7 @@ export default function SelfieBooth() {
         },
         body: JSON.stringify({
           email,
-          image: processedImage,
+          image: base64Image,
         }),
       });
 
@@ -187,6 +206,7 @@ export default function SelfieBooth() {
       setIsProcessing(false);
     }
   };
+
 
   const downloadImage = () => {
     if (!processedImage || !hasEdited) return;
@@ -217,6 +237,15 @@ export default function SelfieBooth() {
 	  setSelectedGender(''); 
 	  
 	};
+
+  const testEmail = () => {
+    console.log('Testing email');
+    setProcessedImage("/out-0.png");
+    console.log("Image processed")
+    setHasEdited(true);
+    setEmail("eknotts64@gmail.com");
+    sendEmail()
+  }
 
   const videoConstraints = {
     width: 720,
