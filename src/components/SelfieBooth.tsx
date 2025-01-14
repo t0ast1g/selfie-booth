@@ -8,6 +8,8 @@ import { Camera, RefreshCw, Send, Download, Wand2, AlertCircle, BookOpen, X } fr
 type WebcamRef = React.RefObject<Webcam>;
 type Gender = 'female' | 'male' | '';  
 
+
+
 const themes = [
   'Cyberpunk Character',
   'Fantasy Warrior',
@@ -31,6 +33,7 @@ export default function SelfieBooth() {
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
@@ -156,13 +159,30 @@ export default function SelfieBooth() {
 		}, 500);  
 	  }  
 	};
+
+  // Uses the url stored in processedImage to convert the image to Base64
+  const convertImageToBase64 = async (imageUrl: string) => {
+    const response = await fetch(imageUrl); // Fetch image data from URL
+    const blob = await response.blob(); // Get binary data of image
+
+    // Convert blob to Base64
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob); // Convert blob to Base64
+    });
+  }
+
   const sendEmail = async () => {
     if (!processedImage || !email || !hasEdited) return;
 
-    setIsProcessing(true);
+    setIsSendingEmail(true);
     setError(null);
 
     try {
+      const base64Image = await convertImageToBase64(processedImage);
+
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
@@ -170,7 +190,7 @@ export default function SelfieBooth() {
         },
         body: JSON.stringify({
           email,
-          image: processedImage,
+          image: base64Image,
         }),
       });
 
@@ -184,9 +204,10 @@ export default function SelfieBooth() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send email');
     } finally {
-      setIsProcessing(false);
+      setIsSendingEmail(false);
     }
   };
+
 
   const downloadImage = () => {
     if (!processedImage || !hasEdited) return;
@@ -217,6 +238,15 @@ export default function SelfieBooth() {
 	  setSelectedGender(''); 
 	  
 	};
+
+  const testEmail = () => {
+    console.log('Testing email');
+    setProcessedImage("/out-0.png");
+    console.log("Image processed")
+    setHasEdited(true);
+    setEmail("eknotts64@gmail.com");
+    sendEmail()
+  }
 
   const videoConstraints = {
     width: 720,
@@ -464,7 +494,7 @@ export default function SelfieBooth() {
                   className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   <Send className="w-5 h-5" />
-                  <span>{isProcessing ? 'Sending...' : 'Send to Email'}</span>
+                  <span>{isSendingEmail ? 'Sending...' : 'Send to Email'}</span>
                 </button>
               </div>
               

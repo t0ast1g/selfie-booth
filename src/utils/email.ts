@@ -4,7 +4,7 @@ if (!process.env.SMTP_HOST || !process.env.SMTP_PORT || !process.env.SMTP_USER |
   throw new Error("Missing email configuration environment variables");
 }
 
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
   secure: process.env.SMTP_PORT === '465',
