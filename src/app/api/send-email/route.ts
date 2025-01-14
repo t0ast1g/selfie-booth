@@ -2,11 +2,9 @@ import { NextResponse } from 'next/server';
 import { transporter } from '@/utils/email';
 
 export async function POST(request: Request) {
-  console.log("Request", request);
-
   try {
     const { email, image } = await request.json();
-    
+
     console.log('Sending email to:', email);
     console.log("Image", image);
 
