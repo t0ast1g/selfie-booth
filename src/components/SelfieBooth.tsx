@@ -33,6 +33,7 @@ export default function SelfieBooth() {
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
   const [editPrompt, setEditPrompt] = useState('');
@@ -176,7 +177,7 @@ export default function SelfieBooth() {
   const sendEmail = async () => {
     if (!processedImage || !email || !hasEdited) return;
 
-    setIsProcessing(true);
+    setIsSendingEmail(true);
     setError(null);
 
     try {
@@ -203,7 +204,7 @@ export default function SelfieBooth() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send email');
     } finally {
-      setIsProcessing(false);
+      setIsSendingEmail(false);
     }
   };
 
@@ -493,7 +494,7 @@ export default function SelfieBooth() {
                   className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   <Send className="w-5 h-5" />
-                  <span>{isProcessing ? 'Sending...' : 'Send to Email'}</span>
+                  <span>{isSendingEmail ? 'Sending...' : 'Send to Email'}</span>
                 </button>
               </div>
               
