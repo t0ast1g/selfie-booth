@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createTransporter } from '@/utils/email';
+import { transporter } from '@/utils/email';
 
 export async function POST(request: Request) {
   try {
     const { email, image } = await request.json();
 
-    const transporter = createTransporter();
+    console.log('Sending email to:', email);
+    console.log("Image", image);
 
     await transporter.sendMail({
       from: process.env.SMTP_USER,
