@@ -379,7 +379,7 @@ export default function SelfieBooth() {
 				  Apply Edit
 				</button>
 			  <button
-				onClick={() => downloadImage(themeImage, 'themed-image.png')}
+				onClick={() => downloadImages(themeImage, 'themed-image.png')}
 				className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors mt-4"
 			  >
 				Download Themed Image
@@ -394,7 +394,7 @@ export default function SelfieBooth() {
 				className="w-full rounded-lg mb-4"
 			  />
 			  <button
-				onClick={() => downloadImage(headshotImage, 'headshot-image.png')}
+				onClick={() => downloadImages(headshotImage, 'headshot-image.png')}
 				className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
 			  >
 				Download Headshot
