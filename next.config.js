@@ -14,4 +14,6 @@ const nextConfig = {
   },  
 }  
 
-module.exports = nextConfig
+module.exports = {
+  output: 'standalone', // Enables deployment as a single server bundle
+};
