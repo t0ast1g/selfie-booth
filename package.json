@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node .next/standalone/server.js",
-    "lint": "next lint",
-    "test": "jest"
+    "start": "next start -p 8080",
+    "lint": "next lint"
   },
+
   "dependencies": {
     "@types/react-webcam": "^1.1.0",
     "lucide-react": "^0.303.0",
