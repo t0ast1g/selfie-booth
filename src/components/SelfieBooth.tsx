@@ -183,63 +183,84 @@ export default function SelfieBooth() {
 	};
 
 
-  const sendEmail = async () => {
-    if (!themeImage || !headshotImage || !email) return;
+	const sendEmail = async () => {
+	  if (!themeImage || !headshotImage || !email) {
+		setError('Missing email or images.');
+		return;
+	  }
 
-    setIsSendingEmail(true);
-    setError(null);
+	  setIsSendingEmail(true);
+	  setError(null);
 
-    try {
-      const base64ThemeImage = await convertImageToBase64(themeImage);
-      const base64HeadshotImage = await convertImageToBase64(headshotImage);
+	  try {
+		const base64ThemeImage = await convertImageToBase64(themeImage);
+		const base64HeadshotImage = await convertImageToBase64(headshotImage);
 
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          images: [
-            { filename: 'themed-image.png', data: base64ThemeImage },
-            { filename: 'headshot-image.png', data: base64HeadshotImage },
-          ],
-        }),
-      });
+		const response = await fetch('/api/send-email', {
+		  method: 'POST',
+		  headers: {
+			'Content-Type': 'application/json',
+		  },
+		  body: JSON.stringify({
+			email,
+			images: [base64ThemeImage, base64HeadshotImage],
+		  }),
+		});
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to send email');
-      }
+		if (!response.ok) {
+		  const data = await response.json();
+		  throw new Error(data.error || 'Failed to send email');
+		}
 
-      setEmail('');
-      alert('Email sent successfully!');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send email');
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
+		setEmail('');
+		alert('Email sent successfully!');
+	  } catch (err) {
+		console.error('Email sending error:', err);
+		setError(err instanceof Error ? err.message : 'Failed to send email');
+	  } finally {
+		setIsSendingEmail(false);
+	  }
+	};
 
-  const downloadImages = () => {
-    if (themeImage) {
-      const linkTheme = document.createElement('a');
-      linkTheme.href = themeImage;
-      linkTheme.download = 'themed-image.png';
-      document.body.appendChild(linkTheme);
-      linkTheme.click();
-      document.body.removeChild(linkTheme);
-    }
 
-    if (headshotImage) {
-      const linkHeadshot = document.createElement('a');
-      linkHeadshot.href = headshotImage;
-      linkHeadshot.download = 'headshot-image.png';
-      document.body.appendChild(linkHeadshot);
-      linkHeadshot.click();
-      document.body.removeChild(linkHeadshot);
-    }
-  };
+
+	const downloadImages = () => {
+	  if (themeImage) {
+		const linkTheme = document.createElement('a');
+		linkTheme.href = themeImage;
+		linkTheme.download = 'themed-image.png';
+		linkTheme.target = '_blank';
+		document.body.appendChild(linkTheme);
+		linkTheme.click();
+		document.body.removeChild(linkTheme);
+	  }
+
+	  if (headshotImage) {
+		const linkHeadshot = document.createElement('a');
+		linkHeadshot.href = headshotImage;
+		linkHeadshot.download = 'headshot-image.png';
+		linkHeadshot.target = '_blank';
+		document.body.appendChild(linkHeadshot);
+		linkHeadshot.click();
+		document.body.removeChild(linkHeadshot);
+	  }
+	};
+	
+	const downloadImage = (imageUrl: string | null, filename: string) => {
+	  if (!imageUrl) return;
+
+	  const link = document.createElement('a');
+	  link.href = imageUrl;
+	  link.download = filename;
+
+	  // This ensures the download doesn't replace the current tab
+	  link.target = '_blank';
+
+	  document.body.appendChild(link);
+	  link.click();
+	  document.body.removeChild(link);
+	};
+
 
   const retake = () => {
     if (retakeCount >= 1) {
@@ -357,15 +378,17 @@ export default function SelfieBooth() {
 			</div>
 		  </div>
 
-		{themeImage && headshotImage && (
+		{(themeImage || headshotImage) && (
 		  <div className="bg-white rounded-lg shadow-xl p-6">
-			<div className="mb-6">
-			  <h2 className="text-lg font-semibold text-gray-700 mb-4">Themed Transformation</h2>
-			  <img
-				src={themeImage}
-				alt="Themed"
-				className="w-full rounded-lg mb-4"
-			  />
+			{/* Render Themed Transformation */}
+			{themeImage && (
+			  <div className="mb-6">
+				<h2 className="text-lg font-semibold text-gray-700 mb-4">Themed Transformation</h2>
+				<img
+				  src={themeImage}
+				  alt="Themed"
+				  className="w-full rounded-lg mb-4"
+				/>
 				<textarea
 				  value={editPrompt}
 				  onChange={(e) => setEditPrompt(e.target.value)}
@@ -378,29 +401,34 @@ export default function SelfieBooth() {
 				>
 				  Apply Edit
 				</button>
-			  <button
-				onClick={() => downloadImages(themeImage, 'themed-image.png')}
-				className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors mt-4"
-			  >
-				Download Themed Image
-			  </button>
-			</div>
+				<button
+				  onClick={() => downloadImage(themeImage, 'themed-image.png')}
+				  className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors mt-4"
+				>
+				  Download Themed Image
+				</button>
+			  </div>
+			)}
 
-			<div className="mb-6">
-			  <h2 className="text-lg font-semibold text-gray-700 mb-4">Professional Headshot</h2>
-			  <img
-				src={headshotImage}
-				alt="Headshot"
-				className="w-full rounded-lg mb-4"
-			  />
-			  <button
-				onClick={() => downloadImages(headshotImage, 'headshot-image.png')}
-				className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
-			  >
-				Download Headshot
-			  </button>
-			</div>
+			{/* Render Professional Headshot */}
+			{headshotImage && (
+			  <div className="mb-6">
+				<h2 className="text-lg font-semibold text-gray-700 mb-4">Professional Headshot</h2>
+				<img
+				  src={headshotImage}
+				  alt="Headshot"
+				  className="w-full rounded-lg mb-4"
+				/>
+				<button
+				  onClick={() => downloadImage(headshotImage, 'headshot-image.png')}
+				  className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
+				>
+				  Download Headshot
+				</button>
+			  </div>
+			)}
 
+			{/* Email and Download Both Images Section */}
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 			  <div className="space-y-4">
 				<input
@@ -418,13 +446,7 @@ export default function SelfieBooth() {
 				  {isSendingEmail ? 'Sending...' : 'Send to Email'}
 				</button>
 			  </div>
-
-			  <button
-				onClick={downloadImages}
-				className="w-full bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors"
-			  >
-				Download Both Images
-			  </button>
+			 
 			</div>
 		  </div>
 		)}

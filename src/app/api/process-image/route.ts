@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         superhero: "solo superhero wearing a superhero costume, dynamic action pose, empty city skyline background, dramatic lighting, cape flowing in the wind, superhero atmosphere",
         knight: "solo knight wearing medieval knight armor, holding a sword and shield, empty castle background, torches on stone walls, medieval fantasy setting",
         "cartoon princess/prince": "Animated cartoon style, royalty, castle background, illustrated cartoon, anime, cute, illustration, drawn features",
-        "minecraft/roblox/lego character": "Blocky, game-accurate style, cartoon, animated, playful colors"
+        "minecraft character": "Blocky, game-accurate style, cartoon, animated, playful colors"
       };
 
       const defaultPrompt = "solo character in detailed themed environment, empty background scene, dynamic composition";
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
         input: {
           image: imageUrl,
           prompt: themePrompt,
-          negative_prompt: "(multiple people, crowd, group, background people, other people:1.8), (additional faces, extra people:1.8), (lowres, worst quality:1.2), (text:1.2), watermark, glitch, cross-eyed, ugly",
+          negative_prompt: "(multiple people, crowd, group, background people, other people:1.8), (additional faces, extra people:1.8), (lowres, worst quality:1.2), (text:1.2), watermark, glitch, cross-eyed, ugly, NSFW content",
           sdxl_weights: "protovision-xl-high-fidel",
           face_detection_input_width: 640,
           face_detection_input_height: 640,
