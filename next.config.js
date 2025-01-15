@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */  
 const nextConfig = {  
+  output: 'standalone', // This enables standalone mode for Next.js
   images: {  
     remotePatterns: [  
       {  
@@ -14,6 +15,4 @@ const nextConfig = {
   },  
 }  
 
-module.exports = {
-  output: 'standalone', // Enables deployment as a single server bundle
-};
+module.exports = nextConfig;
