@@ -1,4 +1,5 @@
 import dynamic from 'next/dynamic'
+import Head from 'next/head'
 
 const SelfieBooth = dynamic(() => import('../components/SelfieBooth'), {
   ssr: false
