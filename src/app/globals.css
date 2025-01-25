@@ -1,3 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');  
+
+@font-face {  
+  font-family: 'Optima';  
+  src: local('Optima'),  
+       url('/fonts/Optima.woff2') format('woff2'),  
+       url('/fonts/Optima.woff') format('woff');  
+  font-weight: normal;  
+  font-style: normal;  
+}  
+
+@tailwind base;  
+@tailwind components;  
+@tailwind utilities;  
+
+/* Default font settings */  
+body {  
+  font-family: 'Optima', system-ui, -apple-system, sans-serif;  
+}  
+
+/* Title class */  
+.title-font {  
+  font-family: 'Montserrat', sans-serif;  
+}
