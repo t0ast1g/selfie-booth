@@ -61,8 +61,8 @@ export async function POST(request: Request) {
           negative_prompt:
             '(multiple people, crowd, group, background people, other people:1.8), (additional faces, extra people:1.8), (lowres, worst quality:1.2), (text:1.2), watermark, glitch, cross-eyed, ugly, NSFW content',
           sdxl_weights: 'protovision-xl-high-fidel',
-          face_detection_input_width: 640,
-          face_detection_input_height: 640,
+          face_detection_input_width: 1024,
+          face_detection_input_height: 1024,
           scheduler: 'EulerDiscreteScheduler',
           num_inference_steps: 30,
           guidance_scale: 5,
@@ -86,8 +86,8 @@ export async function POST(request: Request) {
           negative_prompt:
             '(multiple people, crowd, group, background people, other people:1.8), (additional faces, extra people:1.8), (lowres, low quality, worst quality:1.2), (text:1.2), watermark, glitch, deformed, mutated, cross-eyed, ugly, disfigured',
           sdxl_weights: 'protovision-xl-high-fidel',
-          face_detection_input_width: 640,
-          face_detection_input_height: 640,
+          face_detection_input_width: 1024,
+          face_detection_input_height: 1024,
           scheduler: 'EulerDiscreteScheduler',
           num_inference_steps: 30,
           guidance_scale: 5,

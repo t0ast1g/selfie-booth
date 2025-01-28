@@ -246,20 +246,81 @@ export default function SelfieBooth() {
 	  }
 	};
 	
-	const downloadImage = (imageUrl: string | null, filename: string) => {
-	  if (!imageUrl) return;
+		const ImageWithBanner = ({ imageUrl, alt }: { imageUrl: string; alt: string }) => {  
+		  const [selectedBanner, setSelectedBanner] = useState("Banner 1");  
 
-	  const link = document.createElement('a');
-	  link.href = imageUrl;
-	  link.download = filename;
-
-	  // This ensures the download doesn't replace the current tab
-	  link.target = '_blank';
-
-	  document.body.appendChild(link);
-	  link.click();
-	  document.body.removeChild(link);
-	};
+		  return (  
+			<div className="relative">  
+			  <div className="relative w-full" style={{ maxWidth: '1024px', margin: '0 auto' }}>  
+				<img  
+				  src={imageUrl}  
+				  alt={alt}  
+				  className="w-full rounded-lg mb-4"  
+				/>  
+				<div className="absolute inset-0 flex items-center justify-center">  
+				  <img  
+					src={`/Banner ${selectedBanner.split(" ")[1]}.png`}  
+					alt="Banner overlay"  
+					className="w-full h-full object-cover pointer-events-none"  
+					style={{  
+					  position: 'absolute',  
+					  maxWidth: '100%',  
+					  maxHeight: '100%'  
+					}}  
+				  />  
+				</div>  
+			  </div>  
+			  <select  
+				value={selectedBanner}  
+				onChange={(e) => setSelectedBanner(e.target.value)}  
+				className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2"  
+				style={{ maxWidth: '1024px', margin: '0 auto' }}  
+			  >  
+				<option value="Banner 1">Banner Style 1</option>  
+				<option value="Banner 2">Banner Style 2</option>  
+				<option value="Banner 3">Banner Style 3</option>  
+			  </select>  
+			</div>  
+		  );  
+		};
+	  const downloadImage = async (imageUrl: string | null, filename: string) => {  
+		if (!imageUrl) return;  
+		
+		// Create a canvas to combine image and banner  
+		const canvas = document.createElement('canvas');  
+		const ctx = canvas.getContext('2d');  
+		
+		// Load the main image  
+		const img = new Image();  
+		img.crossOrigin = "anonymous";  
+		
+		img.onload = () => {  
+		  canvas.width = img.width;  
+		  canvas.height = img.height;  
+		  
+		  // Draw the main image  
+		  ctx?.drawImage(img, 0, 0);  
+		  
+		  // Load and draw the banner  
+		  const banner = new Image();  
+		  banner.crossOrigin = "anonymous";  
+		  banner.src = `/public/banner2.png`; // Use the default banner or get it from state  
+		  
+		  banner.onload = () => {  
+			ctx?.drawImage(banner, 0, 0, canvas.width, canvas.height);  
+			
+			// Create download link  
+			const link = document.createElement('a');  
+			link.download = filename;  
+			link.href = canvas.toDataURL('image/png');  
+			document.body.appendChild(link);  
+			link.click();  
+			document.body.removeChild(link);  
+		  };  
+		};  
+		
+		img.src = imageUrl;  
+	  };  
 
 
   const retake = () => {
@@ -375,78 +436,73 @@ export default function SelfieBooth() {
 			</div>
 		  </div>
 
-		{(themeImage || headshotImage) && (
-		  <div className="bg-white rounded-lg shadow-xl p-6">
-			{/* Render Themed Transformation */}
-			{themeImage && (
-			  <div className="mb-6">
-				<h2 className="text-lg font-semibold text-gray-700 mb-4">Themed Transformation</h2>
-				<img
-				  src={themeImage}
-				  alt="Themed"
-				  className="w-full rounded-lg mb-4"
-				/>
-				<textarea
-				  value={editPrompt}
-				  onChange={(e) => setEditPrompt(e.target.value)}
-				  placeholder="Describe an edit to apply to the themed image..."
-				  className="w-full p-2 border rounded-lg h-32 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-				></textarea>
-				<button
-				  onClick={applyEdit}
-				  className="w-full bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors mt-4"
-				>
-				  Apply Edit
-				</button>
-				<button
-				  onClick={() => downloadImage(themeImage, 'themed-image.png')}
-				  className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors mt-4"
-				>
-				  Download Themed Image
-				</button>
+		{(themeImage || headshotImage) && (  
+			<div className="bg-white rounded-lg shadow-xl p-6">  
+			  {/* Render Themed Transformation */}  
+			  {themeImage && (  
+				<div className="mb-6">  
+				  <h2 className="text-lg font-semibold text-gray-700 mb-4">  
+					Themed Transformation  
+				  </h2>  
+				  <ImageWithBanner imageUrl={themeImage} alt="Themed" />  
+				  <textarea  
+					value={editPrompt}  
+					onChange={(e) => setEditPrompt(e.target.value)}  
+					placeholder="Describe an edit to apply to the themed image..."  
+					className="w-full p-2 border rounded-lg h-32 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"  
+				  />  
+				  <button  
+					onClick={applyEdit}  
+					className="w-full bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors mt-4"  
+				  >  
+					Apply Edit  
+				  </button>  
+				  <button  
+					onClick={() => downloadImage(themeImage, 'themed-image.png')}  
+					className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors mt-4"  
+				  >  
+					Download Themed Image  
+				  </button>  
+				</div>  
+			  )}  
+
+			  {/* Render Professional Headshot */}  
+			  {headshotImage && (  
+				<div className="mb-6">  
+				  <h2 className="text-lg font-semibold text-gray-700 mb-4">  
+					Professional Headshot  
+				  </h2>  
+				  <ImageWithBanner imageUrl={headshotImage} alt="Headshot" />  
+				  <button  
+					onClick={() => downloadImage(headshotImage, 'headshot-image.png')}  
+					className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"  
+				  >  
+					Download Headshot  
+				  </button>  
+				</div>  
+			  )}  
+				{/* Email and Download Both Images Section */}
+				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+				  <div className="space-y-4">
+					<input
+					  type="email"
+					  value={email}
+					  onChange={(e) => setEmail(e.target.value)}
+					  placeholder="Enter your email"
+					  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					/>
+					<button
+					  onClick={sendEmail}
+					  disabled={isSendingEmail || !email}
+					  className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+					>
+					  {isSendingEmail ? 'Sending...' : 'Send to Email'}
+					</button>
+				  </div>
+				 
+				</div>
 			  </div>
 			)}
-
-			{/* Render Professional Headshot */}
-			{headshotImage && (
-			  <div className="mb-6">
-				<h2 className="text-lg font-semibold text-gray-700 mb-4">Professional Headshot</h2>
-				<img
-				  src={headshotImage}
-				  alt="Headshot"
-				  className="w-full rounded-lg mb-4"
-				/>
-				<button
-				  onClick={() => downloadImage(headshotImage, 'headshot-image.png')}
-				  className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
-				>
-				  Download Headshot
-				</button>
-			  </div>
-			)}
-
-			{/* Email and Download Both Images Section */}
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-			  <div className="space-y-4">
-				<input
-				  type="email"
-				  value={email}
-				  onChange={(e) => setEmail(e.target.value)}
-				  placeholder="Enter your email"
-				  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-				/>
-				<button
-				  onClick={sendEmail}
-				  disabled={isSendingEmail || !email}
-				  className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-				>
-				  {isSendingEmail ? 'Sending...' : 'Send to Email'}
-				</button>
-			  </div>
-			 
-			</div>
-		  </div>
-		)}
 
 
 		  {error && (
