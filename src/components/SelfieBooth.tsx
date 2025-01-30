@@ -38,9 +38,12 @@ export default function SelfieBooth() {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [retakeCount, setRetakeCount] = useState(0);
   const [selectedGender, setSelectedGender] = useState<Gender>('');
   const [editPrompt, setEditPrompt] = useState('');
+  const [showAgreement, setShowAgreement] = useState(true);  
+  const [agreementAccepted, setAgreementAccepted] = useState(false);  
+  const [themedBanner, setThemedBanner] = useState("1");  
+  const [headshotBanner, setHeadshotBanner] = useState("1"); 
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -61,6 +64,139 @@ export default function SelfieBooth() {
     return () => clearInterval(interval);
   }, [isProcessing]);
 
+  const applyEdit = async () => {
+    if (!themeImage || !editPrompt) {
+      setError('Please provide an edit description');
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/edit-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: themeImage,
+          prompt: editPrompt,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.editedImage) {
+        throw new Error(data.error || 'Failed to apply edit');
+      }
+
+      setThemeImage(data.editedImage);
+      setEditPrompt('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while applying the edit');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const PrivacyAgreement = ({ onAccept }: { onAccept: () => void }) => {
+    const [accepted, setAccepted] = useState(false);
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (accepted) {
+        onAccept();
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6 space-y-6">
+            <h1 className="text-2xl font-bold text-[#0171C5] mb-6">
+              Photo Booth Participation Agreement
+            </h1>
+
+            <p className="mb-4">
+              Thank you for participating in our photo booth experience! By signing this agreement, you
+              acknowledge and consent to the following terms:
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#0171C5] mb-2">1. Use of Images</h2>
+                <p>
+                  By participating in the photo booth, you grant AI OWL the right to use your AI-generated
+                  image for internal and external marketing purposes, including but not limited to
+                  promotional materials, social media, website content, and advertising campaigns.
+                </p>
+                <p>
+                  Only the AI-generated image created from your participation will be used for marketing
+                  purposes. Your original photograph and personal data will not be shared or used in any
+                  way.
+                </p>
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-[#0171C5] mb-2">2. Data Privacy</h2>
+                <p>
+                  Your email address or any other personal information collected during your participation
+                  will be kept confidential and will not be sold, shared, or distributed to any third parties.
+                </p>
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-[#0171C5] mb-2">3. Scope of Use</h2>
+                <p>
+                  Your AI-generated image will be used exclusively for marketing purposes as described
+                  above and will not be utilized for any other purposes without your explicit consent.
+                </p>
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-[#0171C5] mb-2">4. Voluntary Participation</h2>
+                <p>
+                  Participation in the photo booth is entirely voluntary. By signing below, you confirm that
+                  you understand and agree to the terms outlined in this agreement.
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t pt-6 mt-6">
+              <h2 className="text-xl font-bold text-[#0171C5] mb-4">Acknowledgment and Consent</h2>
+              <p className="mb-4">
+                By checking the box below, I confirm that I have read and understood the terms of this
+                agreement. I consent to the use of my AI-generated image for the purposes stated above.
+              </p>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="agreement"
+                    checked={accepted}
+                    onChange={(e) => setAccepted(e.target.checked)}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <label htmlFor="agreement">I agree to the terms and conditions.</label>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!accepted}
+                  className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                >
+                  Submit
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const captureImage = useCallback(() => {
     if (webcamRef.current) {
       const imageSrc = webcamRef.current.getScreenshot();
@@ -71,269 +207,146 @@ export default function SelfieBooth() {
     }
   }, []);
 
-	const handleThemeSelect = (theme: string) => {
-	  if (!capturedImage) {
-		setError('Please capture an image first');
-		return;
-	  }
-	  setSelectedTheme(theme);
-	  setThemeImage(null);
-	  setHeadshotImage(null);
-	  setError(null);
-	};
+  const handleThemeSelect = (theme: string) => {
+    if (!capturedImage) {
+      setError('Please capture an image first');
+      return;
+    }
+    setSelectedTheme(theme);
+    setThemeImage(null);
+    setHeadshotImage(null);
+    setError(null);
+  };
 
+  const processImage = async () => {
+    if (!capturedImage || !selectedTheme) return;
 
-	const processImage = async () => {
-	  if (!capturedImage || !selectedTheme) return;
+    setIsProcessing(true);
+    setError(null);
 
-	  setIsProcessing(true);
-	  setError(null);
+    try {
+      const response = await fetch('/api/process-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: capturedImage,
+          theme: `${selectedGender ? `${selectedGender} ` : ''}${selectedTheme}`,
+          style: styles[Math.floor(Math.random() * styles.length)],
+        }),
+      });
 
-	  try {
-		const endpoint = '/api/process-image';
-		const genderPrefix = selectedGender ? `${selectedGender} ` : '';
+      const data = await response.json();
 
-		const requestBody = {
-		  image: capturedImage,
-		  theme: `${genderPrefix}${selectedTheme}`,
-		  style: styles[Math.floor(Math.random() * styles.length)],
-		};
+      if (!response.ok || !data.themeImage || !data.headshotImage) {
+        throw new Error(data.error || 'Failed to process images');
+      }
 
-		const response = await fetch(endpoint, {
-		  method: 'POST',
-		  headers: {
-			'Content-Type': 'application/json',
-		  },
-		  body: JSON.stringify(requestBody),
-		});
+      setThemeImage(data.themeImage);
+      setHeadshotImage(data.headshotImage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred while processing the images');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-		const data = await response.json();
-
-		if (!response.ok || !data.themeImage || !data.headshotImage) {
-		  throw new Error(data.error || 'Failed to process images');
-		}
-
-		// Ensure both images are set simultaneously
-		setThemeImage(data.themeImage);
-		setHeadshotImage(data.headshotImage);
-	  } catch (err) {
-		console.error('Processing error:', err);
-		setError(err instanceof Error ? err.message : 'An error occurred while processing the images');
-	  } finally {
-		setIsProcessing(false);
-	  }
-	};
-
-
-  const convertImageToBase64 = async (imageUrl: string) => {
-    const response = await fetch(imageUrl);
-    const blob = await response.blob();
-
+  const combineImageWithBanner = async (imageUrl: string, bannerNumber: string): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const banner = new Image();
+          banner.crossOrigin = "anonymous";
+          banner.onload = () => {
+            ctx.drawImage(banner, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          banner.onerror = reject;
+          banner.src = `/Banner ${bannerNumber}.png`;
+        } else {
+          reject(new Error('Could not get canvas context'));
+        }
+      };
+      img.onerror = reject;
+      img.src = imageUrl;
     });
   };
 
-	const applyEdit = async () => {
-	  if (!themeImage || !editPrompt.trim()) return;
-
-	  setIsProcessing(true);
-	  setError(null);
-
-	  try {
-		const endpoint = '/api/edit-image';
-
-		const requestBody = {
-		  image: themeImage,
-		  prompt: `Make a small change: ${editPrompt} while keeping everything else exactly the same`,
-		  scheduler: 'K_EULER',
-		  num_inference_steps: 40,
-		  image_guidance_scale: 1.5,
-		  guidance_scale: 7.5,
-		};
-
-		const response = await fetch(endpoint, {
-		  method: 'POST',
-		  headers: {
-			'Content-Type': 'application/json',
-		  },
-		  body: JSON.stringify(requestBody),
-		});
-
-		const data = await response.json();
-
-		if (!response.ok || !data.processedImage) {
-		  throw new Error(data.error || 'Failed to apply edit');
-		}
-
-		setThemeImage(data.processedImage);
-	  } catch (err) {
-		console.error('Edit error:', err);
-		setError(err instanceof Error ? err.message : 'An error occurred while applying the edit');
-	  } finally {
-		setProgress(100);
-		setTimeout(() => {
-		  setIsProcessing(false);
-		  setProgress(0);
-		}, 500);
-	  }
-	};
-
-
-	const sendEmail = async () => {
-	  if (!themeImage || !headshotImage || !email) {
-		setError('Missing email or images.');
-		return;
-	  }
-
-	  setIsSendingEmail(true);
-	  setError(null);
-
-	  try {
-		const base64ThemeImage = await convertImageToBase64(themeImage);
-		const base64HeadshotImage = await convertImageToBase64(headshotImage);
-
-		const response = await fetch('/api/send-email', {
-		  method: 'POST',
-		  headers: {
-			'Content-Type': 'application/json',
-		  },
-		  body: JSON.stringify({
-			email,
-			images: [base64ThemeImage, base64HeadshotImage],
-		  }),
-		});
-
-		if (!response.ok) {
-		  const data = await response.json();
-		  throw new Error(data.error || 'Failed to send email');
-		}
-
-		setEmail('');
-		alert('Email sent successfully!');
-	  } catch (err) {
-		console.error('Email sending error:', err);
-		setError(err instanceof Error ? err.message : 'Failed to send email');
-	  } finally {
-		setIsSendingEmail(false);
-	  }
-	};
-
-
-
-	const downloadImages = () => {
-	  if (themeImage) {
-		const linkTheme = document.createElement('a');
-		linkTheme.href = themeImage;
-		linkTheme.download = 'themed-image.png';
-		linkTheme.target = '_blank';
-		document.body.appendChild(linkTheme);
-		linkTheme.click();
-		document.body.removeChild(linkTheme);
-	  }
-
-	  if (headshotImage) {
-		const linkHeadshot = document.createElement('a');
-		linkHeadshot.href = headshotImage;
-		linkHeadshot.download = 'headshot-image.png';
-		linkHeadshot.target = '_blank';
-		document.body.appendChild(linkHeadshot);
-		linkHeadshot.click();
-		document.body.removeChild(linkHeadshot);
-	  }
-	};
-	
-		const ImageWithBanner = ({ imageUrl, alt }: { imageUrl: string; alt: string }) => {  
-		  const [selectedBanner, setSelectedBanner] = useState("Banner 1");  
-
-		  return (  
-			<div className="relative">  
-			  <div className="relative w-full" style={{ maxWidth: '1024px', margin: '0 auto' }}>  
-				<img  
-				  src={imageUrl}  
-				  alt={alt}  
-				  className="w-full rounded-lg mb-4"  
-				/>  
-				<div className="absolute inset-0 flex items-center justify-center">  
-				  <img  
-					src={`/Banner ${selectedBanner.split(" ")[1]}.png`}  
-					alt="Banner overlay"  
-					className="w-full h-full object-cover pointer-events-none"  
-					style={{  
-					  position: 'absolute',  
-					  maxWidth: '100%',  
-					  maxHeight: '100%'  
-					}}  
-				  />  
-				</div>  
-			  </div>  
-			  <select  
-				value={selectedBanner}  
-				onChange={(e) => setSelectedBanner(e.target.value)}  
-				className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2"  
-				style={{ maxWidth: '1024px', margin: '0 auto' }}  
-			  >  
-				<option value="Banner 1">Banner Style 1</option>  
-				<option value="Banner 2">Banner Style 2</option>  
-				<option value="Banner 3">Banner Style 3</option>  
-			  </select>  
-			</div>  
-		  );  
-		};
-	  const downloadImage = async (imageUrl: string | null, filename: string) => {  
-		if (!imageUrl) return;  
-		
-		// Create a canvas to combine image and banner  
-		const canvas = document.createElement('canvas');  
-		const ctx = canvas.getContext('2d');  
-		
-		// Load the main image  
-		const img = new Image();  
-		img.crossOrigin = "anonymous";  
-		
-		img.onload = () => {  
-		  canvas.width = img.width;  
-		  canvas.height = img.height;  
-		  
-		  // Draw the main image  
-		  ctx?.drawImage(img, 0, 0);  
-		  
-		  // Load and draw the banner  
-		  const banner = new Image();  
-		  banner.crossOrigin = "anonymous";  
-		  banner.src = `/public/banner2.png`; // Use the default banner or get it from state  
-		  
-		  banner.onload = () => {  
-			ctx?.drawImage(banner, 0, 0, canvas.width, canvas.height);  
-			
-			// Create download link  
-			const link = document.createElement('a');  
-			link.download = filename;  
-			link.href = canvas.toDataURL('image/png');  
-			document.body.appendChild(link);  
-			link.click();  
-			document.body.removeChild(link);  
-		  };  
-		};  
-		
-		img.src = imageUrl;  
-	  };  
-
-
-  const retake = () => {
-    if (retakeCount >= 1) {
-      setError("You've reached the maximum number of retakes allowed.");
+  const sendEmail = async () => {
+    if (!themeImage || !headshotImage || !email) {
+      setError('Missing email or images.');
       return;
     }
+
+    setIsSendingEmail(true);
+    setError(null);
+
+    try {
+      const themedImageWithBanner = await combineImageWithBanner(themeImage, themedBanner);
+      const headshotImageWithBanner = await combineImageWithBanner(headshotImage, headshotBanner);
+
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          images: [themedImageWithBanner, headshotImageWithBanner],
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to send email');
+      }
+
+      setEmail('');
+      alert('Email sent successfully!');
+    } catch (err) {
+      console.error('Email sending error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to send email');
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  const downloadImage = async (imageUrl: string, filename: string, bannerNumber: string) => {
+    if (!imageUrl) return;
+
+    try {
+      const combinedImage = await combineImageWithBanner(imageUrl, bannerNumber);
+
+      const link = document.createElement('a');
+      link.href = combinedImage;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Download error:', error);
+      setError('Failed to download image');
+    }
+  };
+
+  const retake = () => {
+    setShowAgreement(true);
+    setAgreementAccepted(false);
     setCapturedImage(null);
-	setThemeImage(null);
-	setHeadshotImage(null);
-	setSelectedTheme(null);
-	setEditPrompt('');
-	setError(null);
+    setThemeImage(null);
+    setHeadshotImage(null);
+    setSelectedTheme(null);
+    setEditPrompt('');
+    setError(null);
   };
 
   const videoConstraints = {
@@ -342,195 +355,259 @@ export default function SelfieBooth() {
     facingMode: 'user',
   };
 
-	return (
-	  <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-		<div className="max-w-4xl mx-auto">
-		  
+  const ImageWithBanner = ({
+    imageUrl,
+    alt,
+    onBannerSelect,
+    currentBanner
+  }: {
+    imageUrl: string;
+    alt: string;
+    onBannerSelect?: (bannerNumber: string) => void;
+    currentBanner: string;
+  }) => {
+    const handleBannerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newBanner = e.target.value;
+      if (onBannerSelect) {
+        onBannerSelect(newBanner.split(" ")[1]);
+      }
+    };
 
-		  <div className="bg-white rounded-lg shadow-xl p-6 mb-8">
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-			  <div className="space-y-6">
-				{!capturedImage ? (
-				  <div className="relative rounded-lg overflow-hidden">
-					<Webcam
-					  ref={webcamRef}
-					  audio={false}
-					  screenshotFormat="image/jpeg"
-					  videoConstraints={videoConstraints}
-					  className="w-full rounded-lg"
-					  mirrored
-					/>
-					<button
-					  onClick={captureImage}
-					  className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-colors flex items-center space-x-2"
-					>
-					  <Camera className="w-5 h-5" />
-					  <span>Capture</span>
-					</button>
-				  </div>
-				) : (
-				  <div className="relative">
-					<img src={capturedImage} alt="Captured" className="w-full rounded-lg" />
-					<button
-					  onClick={retake}
-					  disabled={retakeCount >= 1}
-					  className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-500 text-white px-6 py-2 rounded-full hover:bg-gray-600 transition-colors flex items-center space-x-2 disabled:bg-gray-400 disabled:cursor-not-allowed"
-					>
-					  <RefreshCw className="w-5 h-5" />
-					  <span>Retake {retakeCount === 0 ? '(1 remaining)' : '(no retakes left)'}</span>
-					</button>
-				  </div>
-				)}
-			  </div>
+    return (
+      <div className="relative">
+        <div className="relative w-full" style={{ maxWidth: '1024px', margin: '0 auto' }}>
+          <img
+            src={imageUrl}
+            alt={alt}
+            className="w-full rounded-lg mb-4"
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img
+              src={`/Banner ${currentBanner}.png`}
+              alt="Banner overlay"
+              className="w-full h-full object-cover pointer-events-none"
+              style={{
+                position: 'absolute',
+                maxWidth: '100%',
+                maxHeight: '100%'
+              }}
+            />
+          </div>
+        </div>
+        <select
+          value={`Banner ${currentBanner}`}
+          onChange={handleBannerChange}
+          className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2"
+          style={{ maxWidth: '1024px', margin: '0 auto' }}
+        >
+          <option value="Banner 1">Banner Style 1</option>
+          <option value="Banner 2">Banner Style 2</option>
+          <option value="Banner 3">Banner Style 3</option>
+        </select>
+      </div>
+    );
+  };
 
-			  <div className="space-y-6">
-				{capturedImage && !themeImage && !headshotImage && (
-				  <div className="text-center space-y-4">
-					<div className="flex flex-col items-center space-y-2">
-					  <label htmlFor="theme" className="text-sm text-gray-600">
-						Choose Your Transformation
-					  </label>
-					  <select
-						id="theme"
-						value={selectedTheme || ''}
-						onChange={(e) => handleThemeSelect(e.target.value)}
-						className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-					  >
-						<option value="">Select a theme</option>
-						{themes.map((theme) => (
-						  <option key={theme} value={theme}>
-							{theme}
-						  </option>
-						))}
-					  </select>
-					</div>
+  return (
+    <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      {showAgreement && (
+        <PrivacyAgreement onAccept={() => {
+          setShowAgreement(false);
+          setAgreementAccepted(true);
+        }} />
+      )}
+      {!showAgreement && (
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-xl p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                {!capturedImage ? (
+                  <div className="relative rounded-lg overflow-hidden">
+                    <Webcam
+                      ref={webcamRef}
+                      audio={false}
+                      screenshotFormat="image/jpeg"
+                      videoConstraints={videoConstraints}
+                      className="w-full rounded-lg"
+                      mirrored
+                    />
+                    <button
+                      onClick={captureImage}
+                      className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-6 py-2 rounded-full hover:bg-blue-600 transition-colors flex items-center space-x-2"
+                    >
+                      <Camera className="w-5 h-5" />
+                      <span>Capture</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <img src={capturedImage} alt="Captured" className="w-full rounded-lg" />
+                    <button
+                      onClick={retake}
+                      className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-gray-500 text-white px-6 py-2 rounded-full hover:bg-gray-600 transition-colors flex items-center space-x-2"
+                    >
+                      <RefreshCw className="w-5 h-5" />
+                      <span>Retake</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
-					<div className="flex flex-col items-center space-y-2">
-					  <label htmlFor="gender" className="text-sm text-gray-600">
-						Specify Gender (Optional)
-					  </label>
-					  <select
-						id="gender"
-						value={selectedGender}
-						onChange={(e) => setSelectedGender(e.target.value as Gender)}
-						className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-					  >
-						<option value="">No Preference</option>
-						<option value="female">Female</option>
-						<option value="male">Male</option>
-					  </select>
-					</div>
-				  </div>
-				)}
+              <div className="space-y-6">
+                {capturedImage && !themeImage && !headshotImage && (
+                  <div className="text-center space-y-4">
+                    <div className="flex flex-col items-center space-y-2">
+                      <label htmlFor="theme" className="text-sm text-gray-600">
+                        Choose Your Transformation
+                      </label>
+                      <select
+                        id="theme"
+                        value={selectedTheme || ''}
+                        onChange={(e) => handleThemeSelect(e.target.value)}
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Select a theme</option>
+                        {themes.map((theme) => (
+                          <option key={theme} value={theme}>
+                            {theme}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-				{selectedTheme && !themeImage && !headshotImage && (
-				  <button
-					onClick={processImage}
-					disabled={isProcessing}
-					className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-				  >
-					{isProcessing ? 'Processing...' : `Transform into ${selectedTheme}`}
-				  </button>
-				)}
-			  </div>
-			</div>
-		  </div>
+                    <div className="flex flex-col items-center space-y-2">
+                      <label htmlFor="gender" className="text-sm text-gray-600">
+                        Specify Gender (Optional)
+                      </label>
+                      <select
+                        id="gender"
+                        value={selectedGender}
+                        onChange={(e) => setSelectedGender(e.target.value as Gender)}
+                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">No Preference</option>
+                        <option value="female">Female</option>
+                        <option value="male">Male</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
 
-		{(themeImage || headshotImage) && (  
-			<div className="bg-white rounded-lg shadow-xl p-6">  
-			  {/* Render Themed Transformation */}  
-			  {themeImage && (  
-				<div className="mb-6">  
-				  <h2 className="text-lg font-semibold text-gray-700 mb-4">  
-					Themed Transformation  
-				  </h2>  
-				  <ImageWithBanner imageUrl={themeImage} alt="Themed" />  
-				  <textarea  
-					value={editPrompt}  
-					onChange={(e) => setEditPrompt(e.target.value)}  
-					placeholder="Describe an edit to apply to the themed image..."  
-					className="w-full p-2 border rounded-lg h-32 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"  
-				  />  
-				  <button  
-					onClick={applyEdit}  
-					className="w-full bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors mt-4"  
-				  >  
-					Apply Edit  
-				  </button>  
-				  <button  
-					onClick={() => downloadImage(themeImage, 'themed-image.png')}  
-					className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors mt-4"  
-				  >  
-					Download Themed Image  
-				  </button>  
-				</div>  
-			  )}  
+                {selectedTheme && !themeImage && !headshotImage && (
+                  <button
+                    onClick={processImage}
+                    disabled={isProcessing}
+                    className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? 'Processing...' : `Transform into ${selectedTheme}`}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
-			  {/* Render Professional Headshot */}  
-			  {headshotImage && (  
-				<div className="mb-6">  
-				  <h2 className="text-lg font-semibold text-gray-700 mb-4">  
-					Professional Headshot  
-				  </h2>  
-				  <ImageWithBanner imageUrl={headshotImage} alt="Headshot" />  
-				  <button  
-					onClick={() => downloadImage(headshotImage, 'headshot-image.png')}  
-					className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"  
-				  >  
-					Download Headshot  
-				  </button>  
-				</div>  
-			  )}  
-				{/* Email and Download Both Images Section */}
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-				  <div className="space-y-4">
-					<input
-					  type="email"
-					  value={email}
-					  onChange={(e) => setEmail(e.target.value)}
-					  placeholder="Enter your email"
-					  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-					/>
-					<button
-					  onClick={sendEmail}
-					  disabled={isSendingEmail || !email}
-					  className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-					>
-					  {isSendingEmail ? 'Sending...' : 'Send to Email'}
-					</button>
-				  </div>
-				 
-				</div>
-			  </div>
-			)}
+          {(themeImage || headshotImage) && (
+            <div className="bg-white rounded-lg shadow-xl p-6">
+              {themeImage && (
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-gray-700 mb-4">
+                    Themed Transformation
+                  </h2>
+                  <ImageWithBanner
+                    imageUrl={themeImage}
+                    alt="Themed"
+                    onBannerSelect={(banner) => setThemedBanner(banner)}
+                    currentBanner={themedBanner}
+                  />
+                  <textarea
+                    value={editPrompt}
+                    onChange={(e) => setEditPrompt(e.target.value)}
+                    placeholder="Describe an edit to apply to the themed image..."
+                    className="w-full p-2 border rounded-lg h-32 resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={applyEdit}
+                    className="w-full bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition-colors mt-4"
+                  >
+                    Apply Edit
+                  </button>
+                  <button
+                    onClick={() => downloadImage(themeImage, 'themed-image.png', themedBanner)}
+                    className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors mt-4"
+                  >
+                    Download Themed Image
+                  </button>
+                </div>
+              )}
 
+              {headshotImage && (
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-gray-700 mb-4">
+                    Professional Headshot
+                  </h2>
+                  <ImageWithBanner
+                    imageUrl={headshotImage}
+                    alt="Headshot"
+                    onBannerSelect={(banner) => setHeadshotBanner(banner)}
+                    currentBanner={headshotBanner}
+                  />
+                  <button
+                    onClick={() => downloadImage(headshotImage, 'headshot-image.png', headshotBanner)}
+                    className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    Download Headshot
+                  </button>
+                </div>
+              )}
 
-		  {error && (
-			<div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>
-		  )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={sendEmail}
+                    disabled={isSendingEmail || !email}
+                    className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {isSendingEmail ? 'Sending...' : 'Send to Email'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
-		  {isProcessing && (
-			<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-			  <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
-				<div className="space-y-4">
-				  <div className="flex justify-center">
-					<div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-				  </div>
-				  <div className="text-center">
-					<p className="text-lg font-medium text-gray-700">Creating your AI transformation...</p>
-					<p className="text-sm text-gray-500">This usually takes 20-30 seconds</p>
-				  </div>
-				  <div className="w-full bg-gray-200 rounded-full h-2">
-					<div
-					  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-					  style={{ width: `${progress}%` }}
-					></div>
-				  </div>
-				</div>
-			  </div>
-			</div>
-		  )}
-		</div>
-	  </div>
-	);
+          {error && (
+            <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>
+          )}
+
+          {isProcessing && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-medium text-gray-700">Creating your AI transformation...</p>
+                    <p className="text-sm text-gray-500">This usually takes 20-30 seconds</p>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
