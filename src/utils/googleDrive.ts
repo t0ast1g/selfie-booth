@@ -2,6 +2,14 @@ import { google } from 'googleapis';
 import { GoogleAuth } from 'google-auth-library';  
 import { Readable } from 'stream';  
 
+// Define error interface  
+interface GoogleDriveError {  
+  response?: {  
+    data: any;  
+  };  
+  message: string;  
+}  
+
 // Initialize auth client  
 const auth = new GoogleAuth({  
   keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,  
@@ -9,7 +17,7 @@ const auth = new GoogleAuth({
 });  
 
 // Initialize drive client with auth  
-const drive = google.drive({   
+const drive = google.drive({  
   version: 'v3',  
   auth: auth  
 });  
@@ -45,11 +53,17 @@ export async function saveImageToDrive(imageBuffer: Buffer, fileName: string) {
 
     console.log('File created successfully with ID:', response.data.id);  
     return response.data.id;  
-  } catch (error) {  
+  } catch (error: unknown) {  
     console.error('Detailed error saving to Google Drive:', error);  
-    if (error.response) {  
-      console.error('Error response:', error.response.data);  
+    
+    // Type guard to check if error is our expected type  
+    if (error && typeof error === 'object' && 'response' in error) {  
+      const driveError = error as GoogleDriveError;  
+      if (driveError.response) {  
+        console.error('Error response:', driveError.response.data);  
+      }  
     }  
+    
     throw error;  
   }  
 }  
@@ -68,8 +82,11 @@ export async function testDriveSetup() {
 
     console.log('Successfully connected to Drive');  
     return true;  
-  } catch (error) {  
+  } catch (error: unknown) {  
     console.error('Drive setup test failed:', error);  
+    if (error && typeof error === 'object' && 'message' in error) {  
+      console.error('Error message:', (error as { message: string }).message);  
+    }  
     throw error;  
   }  
 }
