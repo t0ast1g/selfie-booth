@@ -10,9 +10,11 @@ interface GoogleDriveError {
   message: string;  
 }  
 
-// Initialize auth client  
+// Initialize auth client using credentials from environment variable  
 const auth = new GoogleAuth({  
-  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,  
+  credentials: process.env.GOOGLE_APPLICATION_CREDENTIALS ?   
+    JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS) :   
+    undefined,  
   scopes: ['https://www.googleapis.com/auth/drive.file'],  
 });  
 
@@ -30,10 +32,30 @@ function bufferToStream(buffer: Buffer) {
   return stream;  
 }  
 
+// Verify environment variables  
+function verifyEnvironmentVariables() {  
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {  
+    throw new Error('Google credentials not configured');  
+  }  
+
+  if (!process.env.GOOGLE_DRIVE_FOLDER_ID) {  
+    throw new Error('Google Drive folder ID not configured');  
+  }  
+
+  try {  
+    JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);  
+  } catch (error) {  
+    throw new Error('Invalid Google credentials JSON format');  
+  }  
+}  
+
 export async function saveImageToDrive(imageBuffer: Buffer, fileName: string) {  
   try {  
+    verifyEnvironmentVariables();  
+    
     console.log('Starting Drive save operation...');  
     console.log('Using folder ID:', process.env.GOOGLE_DRIVE_FOLDER_ID);  
+    console.log('Credentials available:', !!process.env.GOOGLE_APPLICATION_CREDENTIALS);  
     
     const fileMetadata = {  
       name: fileName,  
@@ -70,8 +92,10 @@ export async function saveImageToDrive(imageBuffer: Buffer, fileName: string) {
 
 export async function testDriveSetup() {  
   try {  
+    verifyEnvironmentVariables();  
+    
     console.log('Testing Drive setup...');  
-    console.log('Credentials path:', process.env.GOOGLE_APPLICATION_CREDENTIALS);  
+    console.log('Credentials available:', !!process.env.GOOGLE_APPLICATION_CREDENTIALS);  
     console.log('Folder ID:', process.env.GOOGLE_DRIVE_FOLDER_ID);  
 
     const response = await drive.files.list({  
@@ -89,4 +113,21 @@ export async function testDriveSetup() {
     }  
     throw error;  
   }  
+}  
+
+// Optional: Export function to get credentials status  
+export function getDriveStatus() {  
+  return {  
+    hasCredentials: !!process.env.GOOGLE_APPLICATION_CREDENTIALS,  
+    hasFolderId: !!process.env.GOOGLE_DRIVE_FOLDER_ID,  
+    isCredentialsValid: (() => {  
+      try {  
+        if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) return false;  
+        JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);  
+        return true;  
+      } catch {  
+        return false;  
+      }  
+    })()  
+  };  
 }
