@@ -15,7 +15,6 @@ next-env.d.ts
 # production
 /build
 credentials/  
-*.json  
 credentials/*.json  
 
 # misc
