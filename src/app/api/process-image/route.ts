@@ -154,7 +154,8 @@ export async function POST(request: Request) {
       console.log(`Saving headshot image as: ${headshotFileName}`);  
       const headshotFileId = await saveImageToDrive(headshotBuffer, headshotFileName);  
       console.log(`Headshot image saved with ID: ${headshotFileId}`);  
-
+	}
+	
     return NextResponse.json({  
       themeImage,  
       headshotImage,  
