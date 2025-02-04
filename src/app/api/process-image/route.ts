@@ -155,15 +155,6 @@ export async function POST(request: Request) {
       const headshotFileId = await saveImageToDrive(headshotBuffer, headshotFileName);  
       console.log(`Headshot image saved with ID: ${headshotFileId}`);  
 
-      console.log('All images saved to Google Drive successfully');  
-    } catch (driveError) {  
-      console.error('Detailed Drive Error:', driveError);  
-      console.error('Error Stack:', driveError.stack);  
-      if (driveError.response) {  
-        console.error('Drive API Response:', driveError.response.data);  
-      }  
-    }  
-
     return NextResponse.json({  
       themeImage,  
       headshotImage,  
