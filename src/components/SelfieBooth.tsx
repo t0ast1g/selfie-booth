@@ -40,10 +40,8 @@ export default function SelfieBooth() {
   const [progress, setProgress] = useState(0);
   const [selectedGender, setSelectedGender] = useState<Gender>('');
   const [editPrompt, setEditPrompt] = useState('');
-  const [showAgreement, setShowAgreement] = useState(true);  
-  const [agreementAccepted, setAgreementAccepted] = useState(false);  
-  const [themedBanner, setThemedBanner] = useState("1");  
-  const [headshotBanner, setHeadshotBanner] = useState("1"); 
+  const [showAgreement, setShowAgreement] = useState(true);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -252,35 +250,6 @@ export default function SelfieBooth() {
     }
   };
 
-  const combineImageWithBanner = async (imageUrl: string, bannerNumber: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          const banner = new Image();
-          banner.crossOrigin = "anonymous";
-          banner.onload = () => {
-            ctx.drawImage(banner, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/png'));
-          };
-          banner.onerror = reject;
-          banner.src = `/Banner ${bannerNumber}.png`;
-        } else {
-          reject(new Error('Could not get canvas context'));
-        }
-      };
-      img.onerror = reject;
-      img.src = imageUrl;
-    });
-  };
-
   const sendEmail = async () => {
     if (!themeImage || !headshotImage || !email) {
       setError('Missing email or images.');
@@ -291,9 +260,6 @@ export default function SelfieBooth() {
     setError(null);
 
     try {
-      const themedImageWithBanner = await combineImageWithBanner(themeImage, themedBanner);
-      const headshotImageWithBanner = await combineImageWithBanner(headshotImage, headshotBanner);
-
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
@@ -301,7 +267,7 @@ export default function SelfieBooth() {
         },
         body: JSON.stringify({
           email,
-          images: [themedImageWithBanner, headshotImageWithBanner],
+          images: [themeImage, headshotImage],
         }),
       });
 
@@ -320,14 +286,12 @@ export default function SelfieBooth() {
     }
   };
 
-  const downloadImage = async (imageUrl: string, filename: string, bannerNumber: string) => {
+  const downloadImage = async (imageUrl: string, filename: string) => {
     if (!imageUrl) return;
 
     try {
-      const combinedImage = await combineImageWithBanner(imageUrl, bannerNumber);
-
       const link = document.createElement('a');
-      link.href = combinedImage;
+      link.href = imageUrl;
       link.download = filename;
       document.body.appendChild(link);
       link.click();
@@ -355,24 +319,13 @@ export default function SelfieBooth() {
     facingMode: 'user',
   };
 
-  const ImageWithBanner = ({
+  const ImageDisplay = ({
     imageUrl,
     alt,
-    onBannerSelect,
-    currentBanner
   }: {
     imageUrl: string;
     alt: string;
-    onBannerSelect?: (bannerNumber: string) => void;
-    currentBanner: string;
   }) => {
-    const handleBannerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newBanner = e.target.value;
-      if (onBannerSelect) {
-        onBannerSelect(newBanner.split(" ")[1]);
-      }
-    };
-
     return (
       <div className="relative">
         <div className="relative w-full" style={{ maxWidth: '1024px', margin: '0 auto' }}>
@@ -381,29 +334,7 @@ export default function SelfieBooth() {
             alt={alt}
             className="w-full rounded-lg mb-4"
           />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <img
-              src={`/Banner ${currentBanner}.png`}
-              alt="Banner overlay"
-              className="w-full h-full object-cover pointer-events-none"
-              style={{
-                position: 'absolute',
-                maxWidth: '100%',
-                maxHeight: '100%'
-              }}
-            />
-          </div>
         </div>
-        <select
-          value={`Banner ${currentBanner}`}
-          onChange={handleBannerChange}
-          className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-2"
-          style={{ maxWidth: '1024px', margin: '0 auto' }}
-        >
-          <option value="Banner 1">Banner Style 1</option>
-          <option value="Banner 2">Banner Style 2</option>
-          <option value="Banner 3">Banner Style 3</option>
-        </select>
       </div>
     );
   };
@@ -513,11 +444,9 @@ export default function SelfieBooth() {
                   <h2 className="text-lg font-semibold text-gray-700 mb-4">
                     Themed Transformation
                   </h2>
-                  <ImageWithBanner
+                  <ImageDisplay
                     imageUrl={themeImage}
                     alt="Themed"
-                    onBannerSelect={(banner) => setThemedBanner(banner)}
-                    currentBanner={themedBanner}
                   />
                   <textarea
                     value={editPrompt}
@@ -532,7 +461,7 @@ export default function SelfieBooth() {
                     Apply Edit
                   </button>
                   <button
-                    onClick={() => downloadImage(themeImage, 'themed-image.png', themedBanner)}
+                    onClick={() => downloadImage(themeImage, 'themed-image.png')}
                     className="w-full bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors mt-4"
                   >
                     Download Themed Image
@@ -545,14 +474,12 @@ export default function SelfieBooth() {
                   <h2 className="text-lg font-semibold text-gray-700 mb-4">
                     Professional Headshot
                   </h2>
-                  <ImageWithBanner
+                  <ImageDisplay
                     imageUrl={headshotImage}
                     alt="Headshot"
-                    onBannerSelect={(banner) => setHeadshotBanner(banner)}
-                    currentBanner={headshotBanner}
                   />
                   <button
-                    onClick={() => downloadImage(headshotImage, 'headshot-image.png', headshotBanner)}
+                    onClick={() => downloadImage(headshotImage, 'headshot-image.png')}
                     className="w-full bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
                   >
                     Download Headshot
